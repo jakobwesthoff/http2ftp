@@ -4,10 +4,23 @@
     "entities": [
         {
             "name": "Foo folder",
-            "folder": {}
+            "folder": {
+                "entities": [
+                    {
+                        "name": "heise.html",
+                        "file": {
+                            "size": 42,
+                            "endpoint": {
+                                "method": "GET",
+                                "url": "http://heise.de"
+                            }
+                        }
+                    }
+                ]
+            }
         },
         {
-            "name": "Foo file",
+            "name": "google.html",
             "file": {
                 "size": 12345,
                 "endpoint": {

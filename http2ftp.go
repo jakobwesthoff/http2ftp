@@ -9,6 +9,7 @@ import (
     "os"
     "fmt"
     "encoding/json"
+    "net/http"
 )
 
 type RequestEndpoint struct {
@@ -144,9 +145,14 @@ func (driver* HttpDriver) ModifiedTime(filepath string) (time.Time, error) {
 
 func (driver* HttpDriver) ChangeDir(path string) bool {
     log.Printf("Change Directory: %v", path)
+
+    if path == "/" {
+        return true
+    }
+    
     virtualEntity, virtualEntityExists := driver.UserConfiguration.FilePathMap[path]
 
-    return virtualEntityExists && virtualEntity.File != nil
+    return virtualEntityExists && virtualEntity.Folder != nil
 }
 
 func FillDirContentsInfo(entities []VirtualEntity) []os.FileInfo {
@@ -197,10 +203,40 @@ func (driver* HttpDriver) MakeDir(path string) bool {
 }
 
 func (driver* HttpDriver) GetFile(filepath string) (string, error) {
-    log.Printf("Transmitting: %v", filepath)
+    log.Printf("Transmit file request: %v", filepath)
 
-    return "", fmt.Errorf("Invalid File requested %v", filepath)
+    virtualEntity, virtualEntityExists := driver.UserConfiguration.FilePathMap[filepath]
+    if !virtualEntityExists || virtualEntity.File == nil {
+        return "", fmt.Errorf("Invalid File requested %v", filepath)
+    }
 
+    endpoint := virtualEntity.File.Endpoint
+
+    log.Printf("Requesting HTTP: %s %s", endpoint.Method, endpoint.Url)
+    response, requestError := doHttpRequest(endpoint.Method, endpoint.Url)
+
+    if requestError != nil {
+        return "", requestError
+    }
+
+    body, readError := ioutil.ReadAll(response.Body)
+    response.Body.Close()
+
+    log.Printf("Transmit file: %v", filepath)
+    return string(body), readError
+}
+
+func doHttpRequest(method string, url string) (*http.Response, error) {
+    client := http.Client{}
+    request, clientError := http.NewRequest(method, url, nil)
+
+    if clientError != nil {
+        return nil, clientError
+    }
+
+    response, requestError := client.Do(request)
+
+    return response, requestError
 }
 
 func (driver* HttpDriver) PutFile(filepath string, reader io.Reader) bool {
