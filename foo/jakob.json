@@ -1,0 +1,20 @@
+{
+    "username": "jakob",
+    "password": "foobar",
+    "entities": [
+        {
+            "name": "Foo folder",
+            "folder": {}
+        },
+        {
+            "name": "Foo file",
+            "file": {
+                "size": 12345,
+                "endpoint": {
+                    "method": "GET",
+                    "url": "http://google.de"
+                }
+            }
+        }
+    ]
+}
