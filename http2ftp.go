@@ -10,6 +10,8 @@ import (
     "fmt"
     "encoding/json"
     "net/http"
+    "flag"
+    "path/filepath"
 )
 
 type RequestEndpoint struct {
@@ -149,7 +151,7 @@ func (driver* HttpDriver) ChangeDir(path string) bool {
     if path == "/" {
         return true
     }
-    
+
     virtualEntity, virtualEntityExists := driver.UserConfiguration.FilePathMap[path]
 
     return virtualEntityExists && virtualEntity.Folder != nil
@@ -257,20 +259,38 @@ func (factory *HttpDriverFactory) NewDriver() (graval.FTPDriver, error) {
      nil
 }
 
+func showUsageAndExit() {
+    fmt.Fprintf(os.Stderr, "Usage: %s [--configurations=] [--port=] [--hostname=]\n\n", os.Args[0])
+    fmt.Fprintf(os.Stderr, "Options:\n")
+    flag.PrintDefaults()
+    os.Exit(42)
+}
+
 /**
  * Run the thing :)
  */
 func main() {
-	configurations, err := LoadConfiguration("./foo")
+    flag.Usage = showUsageAndExit
+    relativeConfigurationPath := flag.String("config", "config", "Path containing all JSON configuration files")
+    serverPort := flag.Int("port", 3333, "Port to run the FTP server on")
+    boundHostname := flag.String("hostname", "127.0.0.1", "Hostname/Interface to bind the the server to")
+    flag.Parse()
+
+    absoluteConfigurationDirectory, _ := filepath.Abs(*relativeConfigurationPath)
+
+	configurations, err := LoadConfiguration(absoluteConfigurationDirectory)
     if err != nil {
-        log.Printf("Foo")
         log.Fatal(err)
     }
 
-    log.Printf("Starting up server")
-
+    log.Printf("Starting ftp server bound to %s:%d", *boundHostname, *serverPort)
     httpFactory := &HttpDriverFactory{configurations}
-    server := graval.NewFTPServer(&graval.FTPServerOpts{Factory: httpFactory})
+    serverConfiguration := &graval.FTPServerOpts{
+        Factory: httpFactory,
+        Port: *serverPort,
+        Hostname: *boundHostname,
+    }
+    server := graval.NewFTPServer(serverConfiguration)
 
 	err = server.ListenAndServe()
 
