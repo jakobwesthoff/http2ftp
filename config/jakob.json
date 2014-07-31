@@ -19,6 +19,15 @@
             }
         },
         {
+            "name": "Remote folder",
+            "folder": {
+                "endpoint": {
+                    "method": "GET",
+                    "url": "http://localhost:8000/remoteFolder.json"
+                }
+            }
+        },
+        {
             "name": "google.html",
             "file": {
                 "size": 12345,

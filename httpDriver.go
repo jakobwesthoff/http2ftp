@@ -3,7 +3,6 @@ package http2ftp
 import (
 	"fmt"
 	"io"
-	"io/ioutil"
 	"log"
 	"os"
 	"time"
@@ -62,8 +61,36 @@ func (driver *httpDriver) ChangeDir(path string) bool {
 	}
 
 	virtualEntity, virtualEntityExists := driver.UserConfiguration.FilePathMap[path]
+	if (!virtualEntityExists || virtualEntity.Folder == nil) {
+		return false
+	}
 
-	return virtualEntityExists && virtualEntity.Folder != nil
+	if (virtualEntity.Folder.Endpoint != nil) {
+		log.Printf("Fetching dynamic folder: %s", path)
+		// The folder contents is dynamic and needs to be fetched
+		body, fetchError := fetchHTTPResourceBody(
+			virtualEntity.Folder.Endpoint.Method,
+			virtualEntity.Folder.Endpoint.URL,
+		)
+
+		if (fetchError != nil) {
+			log.Printf("Failed to fetch dynamic folder contents: %v", fetchError)
+			return false
+		}
+
+		integrationError := IntegrateNewVirtualFolderEntity(
+			driver.UserConfiguration,
+			path,
+			body,
+		)
+
+		if (integrationError != nil) {
+			log.Printf("Failed to integrate dynamic folder contents: %v", integrationError)
+			return false
+		}
+	}
+
+	return true
 }
 
 func fillDirContentsInfo(entities []virtualEntity) []os.FileInfo {
@@ -124,17 +151,14 @@ func (driver *httpDriver) GetFile(filepath string) (string, error) {
 	endpoint := virtualEntity.File.Endpoint
 
 	log.Printf("Requesting HTTP: %s %s", endpoint.Method, endpoint.URL)
-	response, requestError := doHTTPRequest(endpoint.Method, endpoint.URL)
+	body, requestError := fetchHTTPResourceBody(endpoint.Method, endpoint.URL)
 
 	if requestError != nil {
 		return "", requestError
 	}
 
-	body, readError := ioutil.ReadAll(response.Body)
-	response.Body.Close()
-
 	log.Printf("Transmit file: %v", filepath)
-	return string(body), readError
+	return body, nil
 }
 
 func (driver *httpDriver) PutFile(filepath string, reader io.Reader) bool {
