@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"github.com/yob/graval"
+	"path/filepath"
 )
 
 type httpDriver struct {
@@ -65,12 +66,12 @@ func (driver *httpDriver) ChangeDir(path string) bool {
 		return false
 	}
 
-	if (virtualEntity.Folder.Endpoint != nil) {
+	if (virtualEntity.Folder.Endpoint.Read != nil) {
 		log.Printf("Fetching dynamic folder: %s", path)
 		// The folder contents is dynamic and needs to be fetched
 		body, fetchError := fetchHTTPResourceBody(
-			virtualEntity.Folder.Endpoint.Method,
-			virtualEntity.Folder.Endpoint.URL,
+			virtualEntity.Folder.Endpoint.Read.Method,
+			virtualEntity.Folder.Endpoint.Read.URL,
 		)
 
 		if (fetchError != nil) {
@@ -148,7 +149,7 @@ func (driver *httpDriver) GetFile(filepath string) (string, error) {
 		return "", fmt.Errorf("Invalid File requested %v", filepath)
 	}
 
-	endpoint := virtualEntity.File.Endpoint
+	endpoint := virtualEntity.File.Endpoint.Read
 
 	log.Printf("Requesting HTTP: %s %s", endpoint.Method, endpoint.URL)
 	body, requestError := fetchHTTPResourceBody(endpoint.Method, endpoint.URL)
@@ -161,6 +162,38 @@ func (driver *httpDriver) GetFile(filepath string) (string, error) {
 	return body, nil
 }
 
-func (driver *httpDriver) PutFile(filepath string, reader io.Reader) bool {
-	return false
+func getWritableEndpoint(filePathMap map[string]virtualEntity, path string) (*writeEndpoint, error) {
+	// Try as a file
+	virtualEntity, virtualEntityExists := filePathMap[path]
+	if virtualEntityExists && virtualEntity.File.Endpoint.Write != nil {
+		return virtualEntity.File.Endpoint.Write, nil
+	}
+
+	// Try as a directory
+	virtualEntity, virtualEntityExists = filePathMap[filepath.Dir(path)]
+	if virtualEntityExists && virtualEntity.Folder.Endpoint.Write != nil {
+		return virtualEntity.Folder.Endpoint.Write, nil
+	}
+
+	return nil, fmt.Errorf("Write endpoint for file could not be determined: %s", path)
+}
+
+func (driver *httpDriver) PutFile(path string, reader io.Reader) bool {
+	log.Printf("Upload file request: %v", path)
+
+	endpoint, err := getWritableEndpoint(driver.UserConfiguration.FilePathMap, path)
+	if (err != nil) {
+		log.Printf(err.Error())
+		return false
+	}
+
+	log.Printf("Uploading HTTP: POST %s", endpoint.URL)
+	requestError := uploadFileData(endpoint.URL, endpoint.Parameter, filepath.Base(path), reader)
+
+	if requestError != nil {
+		log.Printf("Error uploading file to HTTP: %v", requestError)
+		return false
+	}
+
+	return true
 }

@@ -10,8 +10,18 @@ import (
 )
 
 type requestEndpoint struct {
+	Read *readEndpoint
+	Write *writeEndpoint
+}
+
+type readEndpoint struct {
 	Method string
 	URL    string
+}
+
+type writeEndpoint struct {
+	URL string
+	Parameter string
 }
 
 type virtualFile struct {

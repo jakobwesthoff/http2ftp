@@ -10,8 +10,10 @@
                         "file": {
                             "size": 42,
                             "endpoint": {
-                                "method": "GET",
-                                "url": "http://heise.de"
+                                "read": {
+                                    "method": "GET",
+                                    "url": "http://heise.de"
+                                }
                             }
                         }
                     }
@@ -22,8 +24,10 @@
             "name": "Remote folder",
             "folder": {
                 "endpoint": {
-                    "method": "GET",
-                    "url": "http://localhost:8000/remoteFolder.json"
+                    "read": {
+                        "method": "GET",
+                        "url": "http://localhost:8000/remoteFolder.json"
+                    }
                 }
             }
         },
@@ -32,8 +36,21 @@
             "file": {
                 "size": 12345,
                 "endpoint": {
-                    "method": "GET",
-                    "url": "http://google.de"
+                    "read": {
+                        "method": "GET",
+                        "url": "http://google.de"
+                    }
+                }
+            }
+        },
+        {
+            "name": "upload",
+            "folder": {
+                "endpoint": {
+                    "write": {
+                        "url": "http://localhost:8899/index.php",
+                        "parameter": "file"
+                    }
                 }
             }
         }
