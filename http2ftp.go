@@ -12,6 +12,7 @@ import (
     "net/http"
     "flag"
     "path/filepath"
+    "strings"
 )
 
 type RequestEndpoint struct {
@@ -61,11 +62,13 @@ func LoadConfiguration(path string) (map[string]Configuration, error) {
     }
 
     for _, fileInfo := range dirContents {
-        if fileInfo.IsDir() {
+        fullPath := path + "/" + fileInfo.Name()
+
+        if fileInfo.IsDir() || strings.ToLower(filepath.Ext(fullPath)) != ".json" {
             continue
         }
 
-        fileContents, readFileErr := ioutil.ReadFile(path + "/" + fileInfo.Name())
+        fileContents, readFileErr := ioutil.ReadFile(fullPath)
         if readFileErr != nil {
             return nil, readFileErr
         }
@@ -76,6 +79,8 @@ func LoadConfiguration(path string) (map[string]Configuration, error) {
         if unmarshalError != nil {
             return nil, unmarshalError
         }
+
+        configuration.Username = strings.TrimSuffix(filepath.Base(fullPath), filepath.Ext(fullPath))
 
         configuration.FilePathMap = make(map[string]VirtualEntity)
         CreateFilePathMap("", configuration.Entities, configuration.FilePathMap)
