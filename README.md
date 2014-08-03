@@ -9,7 +9,7 @@ The bridge is considered highly experimental. Even though I am loosely planning 
 After installing Go simply issue the following command to install the project into your `$GOPATH/bin` folder:
 
 ```
-$ go install github.com/jakobwesthoff/http2ftp/cmd/http2ftp
+$ go get github.com/jakobwesthoff/http2ftp/cmd/http2ftp
 ```
 
 The `http2ftp` executable should be ready for usage after that. Execute it with the `-h` flag to retrieve more information about configuration options.
