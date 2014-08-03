@@ -31,7 +31,7 @@ type virtualFile struct {
 
 type virtualFolder struct {
 	Entities []virtualEntity
-	Endpoint *requestEndpoint
+	Endpoint requestEndpoint
 }
 
 type virtualEntity struct {
